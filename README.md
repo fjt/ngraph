@@ -2,8 +2,12 @@
 
 basic usage
 
+# basically, input vertex and edge list and thats about it.
+
 g=Ngraph.new
+
 g.vertex=some_array
+
 g.edge=array_of_vertex_pairs
 
 gn=Ngraph.cube(16) ## 16 dimensional hyper-cube graph
