@@ -2,7 +2,7 @@
 
 basic usage
 
-# basically, input vertex and edge list and thats about it.
+basically, input vertex and edge list and thats about it.
 
 g=Ngraph.new
 
