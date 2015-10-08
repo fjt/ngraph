@@ -963,7 +963,7 @@ class Ngraph
     @label=label
   end
 
-  def draw2d (arg)
+  def draw2d (arg={})
     size=(arg[:size] or 2000)
     path=(arg[:path] or "/tmp/hoge")
     edge=(arg[:edge] or nil)
@@ -976,7 +976,7 @@ class Ngraph
       poss= sp
       vertice =[sp.map{|p|p.last}, Array.new(self.vertex.length){|i|i}].transpose.sort.transpose.last
     else
-      vertice=arg[:vertice]
+      vertice=arg[:vertice].compact
       vertice =vertice.map{|i|[sp[i].last, i]}.sort.transpose.last
       vh=vertice.inject({}){|h, e|h[e]=true; h}
     end
