@@ -300,6 +300,15 @@ class Ngraph
     @edge
   end
 
+  def directed
+    if @directed
+      @directed=false
+    else
+      @directed=true
+    end
+    @directed
+  end
+
   ## some primitive analysis
 
   def tonalist
@@ -338,16 +347,25 @@ class Ngraph
 
   alias :neighbours :tonalist
 
-  def bfs(vl, depth=-1, dl=[], vt=Array.new(@vertex.length){|i|i})
+  def bfs(vl, depth=-1, vt=Array.new(@vertex.length){|i|i})
     vl=[vl] if vl.class != Array; dl = [dl] if dl.class != Array
     vt-=vl
     if vl.length == 0
       vl
     else
-      if depth == 0 or (vl & dl).length > 0
+      if depth == 0
 	[vl]
       else ## depth != 0 and some vertice given
-	[vl]+bfs(vl.map{|v|tonalist[v]}.flatten.uniq & vt, depth-1, dl, vt)
+        nxt=vl.map{|v|
+          if @directed
+            vn=(derulist[v] & vt)
+          else
+            vn=(tonalist[v] & vt)
+          end
+          vn.each{|vv|Proc.new.call(v, vv)}  if block_given?
+          vn
+        }.flatten.uniq
+	[vl]+(if block_given?; bfs(nxt, depth-1, vt, &Proc.new); else; bfs(nxt, depth-1, vt);end)
       end
     end
   end
@@ -655,8 +673,9 @@ class Ngraph
       p l
       stt=graph.tonalist.map.with_index{|tl, i|[tl.length, i]}.sort.last.last
       cs=graph.bfs(stt).flatten
-      segments.push(graph.subgraph(cs))
-      other=Array.new(graph.vertex.length){|i|i}-cs
+      segments.push(cs)
+      other=Array.new(graph.vertex.length){|i|i}
+      cs.each{|i|other.delete_at(i)}
       connected_segments(graph.subgraph(other), segments)
     end
   end
@@ -961,6 +980,78 @@ class Ngraph
 
   def label(&label)
     @label=label
+  end
+
+  def drawc(arg={})
+    require "cairo"
+    size=(arg[:size] or 2000)
+    path=(arg[:path] or "./hoge.png")
+    edge=(arg[:edge] or nil)
+    scale=(arg[:scale] or 1.0)
+    sp=self.pos
+    if arg[:vertice].nil?
+      poss= sp
+      vertice =[sp.map{|p|p.last}, Array.new(self.vertex.length){|i|i}].transpose.sort.transpose.last
+    else
+      vertice=arg[:vertice].compact
+      vertice =vertice.map{|i|[sp[i].last, i]}.sort.transpose.last
+      vh=vertice.inject({}){|h, e|h[e]=true; h}
+    end ## sort vertice indices along z axis position
+
+    sgm=Math::sqrt(sp.map{|p|p.inject(0){|a,b|a+b*b}}.ave)
+    conv=lambda{|p|p*size/(5.0*sgm/scale)+size/2.0}
+    poss= sp.rmap{|v|conv.call(v)}
+
+    Cairo::ImageSurface.new(size, size){|surface|
+      cntxt=Cairo::Context.new(surface)
+      cntxt.set_source_rgb(0, 0, 0)
+      cntxt.paint
+
+      if edge
+        cntxt.set_source_rgba(1.0, 1.0, 1.0, 0.2) ## opaque white is (1, 1, 1, 1)
+
+        if arg[:vertice].nil?
+          elist= self.nbody.edge
+        else
+          elist= self.nbody.edge.filter{|e|e if vh[e.first] and vh[e.last]}
+        end
+        elist.each{|e|
+          cntxt.move_to(*(poss[e[0]].first(2)))
+          cntxt.line_to(*(poss[e[1]].first(2)))
+          cntxt.set_line_width(1.0)
+          cntxt.stroke
+        }
+      end
+
+      cntxt.set_source_rgba(1, 0, 0, 1.0)
+      vertice.each{|vi|
+        gp= poss[vi]
+        ecs, wai=gp[0..1]
+        if @size
+          diam=@size.call(vi)
+        else
+          diam= (size*size)/ (self.vertex.length * 500.0)
+        end
+        diam= 1.0 if diam < 1.0
+        if @colour
+          rgb= @colour.call(vi)
+          if rgb.length == 3
+            rgb.push(1.0) ## always with alpha channel
+          end
+          cntxt.set_source_rgba(*rgb)
+        end
+        cntxt.circle(ecs, wai, diam).fill
+        if @label
+          str= @label.call(vi).to_s
+          fsize = if diam < 10 ; 10 ;else; diam ;end
+          cntxt.set_font_size(fsize)
+          cntxt.move_to(ecs+diam, wai)
+          cntxt.show_text(str)
+        end
+      }
+
+      surface.write_to_png(path)
+    }
   end
 
   def draw2d (arg={})
