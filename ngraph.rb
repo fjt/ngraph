@@ -386,6 +386,18 @@ class Ngraph
     end
   end
 
+  def connected_segments
+    tlo=self.tonalist.map.with_index{|tl, i|[tl.length, i]}.sort.reverse.map{|e|e.last}
+    segments=[]
+    while tlo.length > 0
+      segm=self.dbfs(tlo.first).flatten
+      tlo=tlo-segm
+      segments.push(segm)
+    end
+    segments
+  end
+
+
   def dbfs(vl, depth=-1, vt=Array.new(@vertex.length){|i|i})
     vl=[vl] if vl.class != Array
     vt-=vl
@@ -395,7 +407,7 @@ class Ngraph
       if depth == 0
 	[vl]
       else ## depth != 0 and some vertice given
-	[vl]+dbfs(vl.map{|v|derulist[v]}.flatten.uniq & vt, depth-1, vt)
+	[vl]+dbfs(vl.map{|v|self.tonalist[v]}.flatten.uniq & vt, depth-1, vt)
       end
     end
   end
@@ -666,19 +678,6 @@ class Ngraph
     sg
   end
 
-  def connected_segments(graph=self, segments=[])
-    if (l=graph.vertex.length) <= 2
-      segments
-    else
-      p l
-      stt=graph.tonalist.map.with_index{|tl, i|[tl.length, i]}.sort.last.last
-      cs=graph.bfs(stt).flatten
-      segments.push(cs)
-      other=Array.new(graph.vertex.length){|i|i}
-      cs.each{|i|other.delete_at(i)}
-      connected_segments(graph.subgraph(other), segments)
-    end
-  end
 
   # def subgraph(vertice, opt={})
   #   g = Ngraph.new
