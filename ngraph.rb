@@ -386,13 +386,23 @@ class Ngraph
     end
   end
 
+  def cseg(stt, seg=nil)
+    stt=[stt] if not stt.class ==Array
+    seg=stt if seg.nil?
+    if (nxt=(stt.map{|v|self.tonalist[v]}.flatten.uniq - seg)).length == 0
+      seg
+    else
+      cseg(nxt, seg+nxt)
+    end
+  end
+
   def connected_segments
-    tlo=self.tonalist.map.with_index{|tl, i|[tl.length, i]}.sort.reverse.map{|e|e.last}
+    tlo=(0..self.vertex.length-1).to_a
     segments=[]
     while tlo.length > 0
-      segm=self.dbfs(tlo.first).flatten
-      tlo=tlo-segm
+      segm=cseg(tlo.first)
       segments.push(segm)
+      tlo -= segm
     end
     segments
   end
