@@ -347,26 +347,25 @@ class Ngraph
 
   alias :neighbours :tonalist
 
-  def bfs(vl, depth=-1, vt=Array.new(@vertex.length){|i|i})
-    vl=[vl] if vl.class != Array; dl = [dl] if dl.class != Array
-    vt-=vl
-    if vl.length == 0
-      vl
+  def bfs(stt, depth=-1)
+    if stt.class != Array
+      stt=[[stt]]
+    else if stt.first.class != Array
+           stt=[stt]
+         end
+    end
+
+    done=stt.last
+    if a=stt[-2]
+      done=done+a
+    end
+
+    nxt=(stt.last.map{|v|self.tonalist[v]}.flatten - done).uniq
+
+    if nxt.length == 0 or depth == 0
+      stt
     else
-      if depth == 0
-	[vl]
-      else ## depth != 0 and some vertice given
-        nxt=vl.map{|v|
-          if @directed
-            vn=(derulist[v] & vt)
-          else
-            vn=(tonalist[v] & vt)
-          end
-          vn.each{|vv|Proc.new.call(v, vv)}  if block_given?
-          vn
-        }.flatten.uniq
-	[vl]+(if block_given?; bfs(nxt, depth-1, vt, &Proc.new); else; bfs(nxt, depth-1, vt);end)
-      end
+      nbfs(stt.push(nxt), depth-1)
     end
   end
 
@@ -389,7 +388,7 @@ class Ngraph
   def cseg(stt, seg=nil)
     stt=[stt] if not stt.class ==Array
     seg=stt if seg.nil?
-    if (nxt=(stt.map{|v|self.tonalist[v]}.flatten.uniq - seg)).length == 0
+    if (nxt=(stt.map{|v|self.tonalist[v]}.flatten - seg).uniq).length == 0
       seg
     else
       cseg(nxt, seg+nxt)
