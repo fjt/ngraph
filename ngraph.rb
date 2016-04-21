@@ -253,10 +253,6 @@ class Ngraph
     self
   end
 
-  def edge=(ary)
-    self.diredge=ary.map{|a|a.sort}
-  end
-
   def diredge=(ary) ## load edges to Nbody and setup their length, hookparams.
     @edge=ary.uniq
     # @nbody.edge=@edge.map{|e|[self.vi(e[0]), self.vi(e[1])]}
@@ -272,6 +268,8 @@ class Ngraph
     @tonalist=nil; tonalist
     self
   end
+
+  alias :edge= :diredge= 
 
   def reinit
     @nbody = Nbody.new(@vertex.length)
