@@ -344,8 +344,8 @@ class Ngraph
   end
 
   alias :neighbours :tonalist
-
-  def bfs(stt, depth=-1)
+  
+  def bfs(stt, dir=:bf, done={}, &blk)
     if stt.class != Array
       stt=[[stt]]
     else if stt.first.class != Array
@@ -353,20 +353,27 @@ class Ngraph
          end
     end
 
-    done=stt.last
-    if a=stt[-2]
-      done=done+a
+    stt.last.each{|e|done[e]=true}
+
+    case dir
+    when :b
+      nxt=stt.last.map{|v|self.hailist[v]}.flatten.uniq.map{|e|e if not done[e]}.compact
+    when :f
+      nxt=stt.last.map{|v|self.derulist[v]}.flatten.uniq.map{|e|e if not done[e]}.compact
+    else
+      nxt=stt.last.map{|v|self.tonalist[v]}.flatten.uniq.map{|e|e if not done[e]}.compact
     end
 
-    nxt=(stt.last.map{|v|self.tonalist[v]}.flatten - done).uniq
-
-    if nxt.length == 0 or depth == 0
+    if nxt.length == 0 or (blk.call(stt) if blk)
       stt
     else
-      nbfs(stt.push(nxt), depth-1)
+      bfs(stt.push(nxt), dir, done, &blk)
     end
   end
 
+  def scc(stt)
+    (self.bfs(stt, :f).flatten & self.bfs(stt, :b).flatten).uniq
+  end
 
   def geopath(sl, dl)
     ssl=bfs(sl, -1, dl)
@@ -374,13 +381,9 @@ class Ngraph
     ssl.map_with_index{|s, i|s & ddl[i]}
   end
 
-  def geodist(src, dst)
-    lst=bfs(src, -1, dst)
-    if lst[-1].include?(dst)
-      lst.length
-    else
-      raise "no path from #{src} to #{dst}"
-    end
+  def geodist(src, dst, dir=:bf)
+    lst=self.bfs(src, dir){|p|p.last.include?(dst)}
+    lst.length if lst.last.include?(dst)
   end
 
   def cseg(stt, seg=nil)
@@ -414,7 +417,7 @@ class Ngraph
       if depth == 0
 	[vl]
       else ## depth != 0 and some vertice given
-	[vl]+dbfs(vl.map{|v|self.tonalist[v]}.flatten.uniq & vt, depth-1, vt)
+	[vl]+dbfs(vl.map{|v|self.derulist[v]}.flatten.uniq & vt, depth-1, vt)
       end
     end
   end
@@ -562,6 +565,28 @@ class Ngraph
     eig= cmtx.eigen
     pmtx= eig[0..-2].transpose
     cords=bmtx/pmtx
+  end
+
+  def dpmds(plist, opt=nil)
+    if opt and opt[:dim]
+      dim=opt[:dim]; p dim
+    else
+      dim=3
+    end
+    en=self.vertex.length
+    eg=self.edge.length
+    dmax=(Math::log(en)/(Math::log(2*eg) - Math::log(en))).ceil * 2
+    mtx=plist.map{|v|
+      row=Array.new(self.vertex.length, dmax)
+      sp=self.bfs(v)
+      goout=self.dbfs(v)
+      incom=self.rdbfs(v)
+      sp.each.with_index{|d, i|
+        d.each{|vi|row[vi]=i}
+        (goout[i]&d).each{|vi|row[vi]=2*i} if goout[i]
+        (incom[i]&d).each{|vi|row[vi]=2*i} if incom[i]}
+      row}
+    pmds(plist, mtx, opt)
   end
 
   def pmds(plist, dmtx=nil, opt=nil, &block)
@@ -719,6 +744,13 @@ class Ngraph
 
   def connected?
     self.bfs(0).flatten.length == self.vertex.length
+  end
+
+  def add(vertices, edges)
+    
+  end
+
+  def subt(vindices, edges)
   end
 
   def +(graph)
