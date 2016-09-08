@@ -26,6 +26,7 @@ gn.update(vertice:vertices_list, edge:edge_list)
 is added. it updates the existing network with new set of vertices and edges.
 vertice given by name, while the edge must be given by the vertices index pairs.
 this method returns a new network with node position inherited as much as possible from the original network.
+must be useful for time-series network data.
 
 gn.dpmds(plist)
 is added. it is a new algorith developed to handle link direction within MDS framework.
