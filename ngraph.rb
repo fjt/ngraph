@@ -396,6 +396,8 @@ class Ngraph
     end
   end
 
+
+
   def connected_segments
     tlo=(0..self.vertex.length-1).to_a
     segments=[]
@@ -710,6 +712,35 @@ class Ngraph
     sg
   end
 
+  def update(update)
+    gu=Ngraph.new
+    vertices=update[:vertice].uniq
+    edge=update[:edge].uniq
+    gu.vertex=vertices
+    edge=edge.filter{|e|e if gu.vi(e.first) and gu.vi(e.last)}
+    gu.diredge=edge
+
+    added=[]; remain=[]; found=[]
+    sp=self.pos
+    gup=gu.pos
+    vertices.each.with_index{|v,i|
+      if j=self.vi(v)
+        gup[i]=sp[j]; remain.push(j); found.push(i)
+      else
+        added.push(i)
+      end}
+
+    gut=gu.tonalist
+    gu.bfs(found).each_cons(2){|slice|
+      bk=slice.first
+      slice.last.each{|vi|
+        cp=(gut[vi] & bk).map{|i|gup[i]}.transpose.map{|v|v.ave}
+        gup[vi]=cp
+      }}
+    gu.pos=gup
+    gu
+  end
+
 
   # def subgraph(vertice, opt={})
   #   g = Ngraph.new
@@ -880,7 +911,7 @@ class Ngraph
     @nbody.pos = ps.map_with_index{|p, i|
       a=ac[i]
       b=a.abs
-      p.map_with_index{|pp, ii|
+      p.map.with_index{|pp, ii|
 	pp += dt * a[ii] / b}}
     count(dt)
     self
