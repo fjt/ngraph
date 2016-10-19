@@ -720,21 +720,21 @@ class Ngraph
     edge=edge.filter{|e|e if gu.vi(e.first) and gu.vi(e.last)}
     gu.diredge=edge
 
-    added=[]; remain=[]; found=[]
+    added=[]; remain=[]; found={}
     sp=self.pos
     gup=gu.pos
     vertices.each.with_index{|v,i|
       if j=self.vi(v)
-        gup[i]=sp[j]; remain.push(j); found.push(i)
+        gup[i]=sp[j]; remain.push(j); found[i]=true
       else
         added.push(i)
       end}
 
     gut=gu.tonalist
-    gu.bfs(found).each_cons(2){|slice|
+    gu.bfs(found.to_a.transpose.first).each_cons(2){|slice|
       bk=slice.first
       slice.last.each{|vi|
-        cp=(gut[vi] & bk).map{|i|gup[i]}.transpose.map{|v|v.ave}
+        cp=gut[vi].filter{|i|i if found[i]}.map{|i|gup[i]}.transpose.map{|v|v.ave}
         gup[vi]=cp
       }}
     gu.pos=gup
