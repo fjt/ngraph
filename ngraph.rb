@@ -732,10 +732,10 @@ class Ngraph
 
     gut=gu.tonalist
     gu.bfs(found.to_a.transpose.first).each_cons(2){|slice|
-      bk=slice.first
       slice.last.each{|vi|
         cp=gut[vi].filter{|i|i if found[i]}.map{|i|gup[i]}.transpose.map{|v|v.ave}
         gup[vi]=cp
+        found[vi]=true
       }}
     gu.pos=gup
     gu
