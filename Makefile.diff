@@ -1,0 +1,34 @@
+--- Makefile	2015-09-20 21:57:08.131721219 +0900
++++ Makefile.bk	2015-09-20 21:56:59.283527463 +0900
+@@ -79,11 +79,11 @@
+ warnflags = -Wall -Wextra -Wno-unused-parameter -Wno-parentheses -Wno-long-long -Wno-missing-field-initializers -Wunused-variable -Wpointer-arith -Wwrite-strings -Wdeclaration-after-statement -Wimplicit-function-declaration
+ CCDLFLAGS = -fPIC
+ CFLAGS   = $(CCDLFLAGS) -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fPIC $(ARCH_FLAG)
+-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir)
++INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I../
+ DEFS     = 
+ CPPFLAGS =  -D_FORTIFY_SOURCE=2 $(DEFS) $(cppflags)
+ CXXFLAGS = $(CCDLFLAGS) -g -O2 -fstack-protector-strong -Wformat -Werror=format-security $(ARCH_FLAG)
+-ldflags  = -L. -Wl,-z,relro -L/build/ruby2.1-RbnjHU/ruby2.1-2.1.5/debian/lib -fstack-protector -rdynamic -Wl,-export-dynamic
++ldflags  = -L. -Wl,-z,relro -L/build/ruby2.1-64qTCU/ruby2.1-2.1.5/debian/lib -fstack-protector -rdynamic -Wl,-export-dynamic
+ dldflags =  
+ ARCH_FLAG = 
+ DLDFLAGS = $(ldflags) $(dldflags) $(ARCH_FLAG)
+@@ -121,7 +121,7 @@
+ preload = 
+ 
+ libpath = . $(archlibdir)
+-LIBPATH =  -L. -L$(archlibdir)
++LIBPATH =  -L. -L$(archlibdir) -L..
+ DEFFILE = 
+ 
+ CLEANFILES = mkmf.log
+@@ -132,7 +132,7 @@
+ extout_prefix = 
+ target_prefix = 
+ LOCAL_LIBS = 
+-LIBS = $(LIBRUBYARG_SHARED)  -lpthread -lgmp -ldl -lcrypt -lm   -lc
++LIBS = $(LIBRUBYARG_SHARED)  -lpthread -lgmp -ldl -lcrypt -lm   -lc -lvtc
+ ORIG_SRCS = libvtc-ruby.c
+ SRCS = $(ORIG_SRCS) 
+ OBJS = libvtc-ruby.o
