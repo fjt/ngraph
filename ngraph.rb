@@ -21,6 +21,42 @@ require "Nbody"
  
 class Ngraph
 
+  def Ngraph.platonic(faces)
+    case faces
+    when 4
+      Ngraph.complete(4)
+    when 6
+      Ngraph.cube(3)
+    when 8
+      g=Ngraph.new
+      g.vertex=(0..5).to_a
+      g.edge=(0..2).map{|i|[i, (i+1)%3]} + (3..5).map{|i|[i, (i+1)%3+3]} +(0..2).map{|i|[i, (i+3)]} + (3..5).map{|i|[i, (i+1)%3]}
+      g
+    when 12
+      g=Ngraph.new
+      g.vertex=(0..19).to_a
+      g.edge=(0..4).map{|i|[i, (i+1)%5]}+
+        (0..4).map{|i|[i, i+5]}+
+        (15..19).map{|i|[i, (i+1)%5+15]}+
+        (15..19).map{|i|[i, (i-5)]}+
+        [(5..9).to_a, (10..14).to_a].transpose+
+        [(0..4).map{|v|(v+1)%5+5}, (10..14).to_a].transpose
+      g
+    when 20
+      g=Ngraph.new
+      g.vertex=(0..11).to_a
+      g.edge=(0..4).map{|i|[0, i+1]}+
+        (0..4).map{|i|[i+1, (i+1)%5+1]}+
+        (0..4).map{|i|[11, i+6]}+
+        (0..4).map{|i|[i+6, (i+1)%5+6]}+
+        [(1..5).to_a, (6..10).to_a].transpose+
+        [(0..4).map{|v|(v+4)%5+1}, (6..10).to_a].transpose
+      g
+    else
+      nil
+    end
+  end
+
   def Ngraph.ktree(depth = 4, branch = 3)
     g = Ngraph.new
     n = (branch**depth - 1)/(branch - 1)
@@ -187,11 +223,7 @@ class Ngraph
 	@count = obj[:count]
         @mdseig = obj[:mdseig]
       end
-      if Nbody.methods.include?("grape_close")
-	@nbody.tree_vector_param = 2000
-      else
-	@nbody.tree_vector_param = 10
-      end      
+      @nbody.tree_vector_param = 500
     end
   end
 
@@ -245,11 +277,7 @@ class Ngraph
     @vertex.each_with_index{|v, i|@vthash[v]= i}
     @nbody= Nbody.new(@vertex.length)
     @nbody.chg= Array.new(@vertex.length, 1/Math::sqrt(@vertex.length))
-    if Nbody.methods.include?("grape_close")
-      @nbody.tree_vector_param= 2000
-    else
-      @nbody.tree_vector_param= 10
-    end
+    @nbody.tree_vector_param= 500
     self
   end
 
@@ -734,7 +762,7 @@ class Ngraph
     cseg=found.to_a.transpose.first
     gu.bfs(cseg).each_cons(2){|slice|
       slice.last.each{|vi|
-        cp=gut[vip].filter{|i|i if found[i]}.map{|i|gup[i]}.transpose.map{|v|v.ave}
+        cp=gut[vi].filter{|i|i if found[i]}.map{|i|gup[i]}.transpose.map{|v|v.ave}
         gup[vi]=cp
         found[vi]=true
       }}
