@@ -20,6 +20,23 @@ require "Nbody"
 # end
  
 class Ngraph
+  def Ngraph.read_net(src)
+    src=src.split("\n")
+    vnum = src.first.strip.split(' ').last.to_i
+    vertice = src[1..vnum].map{|str|str.split(' ').last.gsub('"', '')}
+    linkindice = src[vnum+2..-1].map{|e|e=e.split(' ');e[0..1].map{|s|s.to_i - 1} if e.last.to_f >= 0.5}.compact
+    g=Ngraph.new
+    g.vertex = vertice
+    g.edge = linkindice.map{|e|e.map{|i|vertice[i]}}
+    g
+  end
+
+  def Ngraph.fullerene
+    ret=Ngraph.new
+    ret.vertex=(0..59).to_a
+    ret.edge=[[2, 3], [1, 2], [0, 1], [0, 4], [2, 7], [1, 6], [0, 5], [8, 3], [3, 4], [9, 4], [22, 10], [10, 5], [19, 5], [18, 6], [17, 6], [16, 7], [15, 7], [14, 8], [13, 8], [12, 9], [11, 9], [19, 18], [17, 16], [14, 15], [13, 12], [11, 10], [20, 19], [38, 18], [36, 17], [34, 16], [32, 15], [30, 14], [28, 13], [26, 12], [24, 11], [20, 22], [38, 36], [34, 32], [30, 28], [26, 24], [21, 20], [39, 38], [37, 36], [35, 34], [33, 32], [28, 29], [30, 31], [26, 27], [24, 25], [23, 22], [23, 25], [21, 39], [37, 35], [33, 31], [29, 27], [45, 31], [46, 33], [47, 35], [48, 37], [49, 39], [40, 21], [41, 23], [42, 25], [43, 27], [44, 29], [40, 41], [49, 48], [47, 46], [45, 44], [43, 42], [51, 40], [51, 49], [59, 48], [59, 47], [57, 46], [57, 45], [55, 44], [55, 43], [53, 42], [53, 41], [52, 53], [50, 51], [58, 59], [56, 57], [54, 55], [50, 52], [50, 58], [58, 56], [56, 54], [54, 52]]
+    ret
+  end
 
   def Ngraph.platonic(faces)
     case faces
@@ -228,6 +245,15 @@ class Ngraph
   end
 
   ## marshal
+
+  def infomap_net(out)
+    head="*Vertices #{self.vertex.length}"
+    boundary="*Edges #{self.edge.length}"
+    out.<< head + "\n"
+    out.<< self.vertex.map.with_index{|v, i|[i+1, v].join(' ')}.join("\n") +"\n"
+    out.<< boundary +"\n"
+    out.<< self.nbody.edge.map{|e|e.map{|i|i+1}.join(' ')}.join("\n")
+  end
 
   def _dump(out)
     ## this dump order is crucial. do not touch (wara
@@ -615,7 +641,9 @@ class Ngraph
         d.each{|vi|row[vi]=i}
         (goout[i]&d).each{|vi|row[vi]=2*i} if goout[i]
         (incom[i]&d).each{|vi|row[vi]=2*i} if incom[i]}
+      p "#{v} done"
       row}
+    p 'mtx done'
     pmds(plist, mtx, opt)
   end
 
@@ -747,19 +775,16 @@ class Ngraph
     gu.vertex=vertices
     edge=edge.filter{|e|e if gu.vi(e.first) and gu.vi(e.last)}
     gu.diredge=edge
-
-    added=[]; remain=[]; found={}
+    found=Array.new(vertices.length){nil}
     sp=self.pos
     gup=gu.pos
     vertices.each.with_index{|v,i|
       if j=self.vi(v)
-        gup[i]=sp[j]; remain.push(j); found[i]=true
-      else
-        added.push(i)
+        gup[i]=sp[j]; found[i]=true
       end}
 
     gut=gu.tonalist
-    cseg=found.to_a.transpose.first
+    cseg=found.map.with_index{|e, i|i if e}.compact
     gu.bfs(cseg).each_cons(2){|slice|
       slice.last.each{|vi|
         cp=gut[vi].filter{|i|i if found[i]}.map{|i|gup[i]}.transpose.map{|v|v.ave}
