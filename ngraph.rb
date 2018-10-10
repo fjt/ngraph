@@ -1,4 +1,13 @@
 #!/usr/bin/ruby
+class Numeric
+  def to_pi
+    if self > 0
+      (i = self.to_i) + (if rand < (self - i); 1; else; 0;end)
+    else
+      (i = self.to_i) - (if rand < (i - self); 1; else; 0;end)
+    end
+  end
+end
 
 def shutup(&block)
   o = STDOUT.dup; e = STDERR.dup
@@ -170,6 +179,54 @@ class Ngraph
     g
   end
 
+  def Ngraph.prefa(size=100000, prob = 0.0)
+    nodes=[0,1]
+    links=[nodes.dup]
+    (size-2).times{|i|nodes.push(i+2); vee=links.sample.sample ; links.push([vee, i+2].shuffle)
+      if rand < prob
+        vo=links.sample.sample
+        links.push([vee, vo].shuffle) if vee != vo
+      end    }
+    pfn=Ngraph.new
+    pfn.vertex=nodes
+    pfn.edge=links
+    pfn
+  end
+
+  def Ngraph.prefb(size: 100000, power: 3.0, mindeg: 1)
+    raise "choose larger than 1 for size and 2 for power." if size < 2
+    ## usage: power given by probability density function power (which is 1 larger than cumulative distribution).
+    ## any float value between 2 and 4 can be designated.
+
+
+    deglb=mindeg.to_pi
+    nodes = (0..deglb).to_a
+    links=nodes.combination(2)
+
+    (size-nodes.length).times{|i|
+      anode=i+2
+      nodes.push(anode)
+      vee=nil
+      deglb.times{vee=links.sample.sample ; links.push([vee, anode].shuffle)}
+
+      alt = (mindeg*(2-power)/2/(power-1)).to_pi
+
+      if alt > 0
+        alt.times{
+          vo=links.sample.sample
+          links.push([vee, vo].shuffle) if anode != vo
+        }
+      else
+        (-alt).times{links.delete_at(rand(links.length))}
+      end
+    }
+
+    pfn=Ngraph.new
+    pfn.vertex=nodes
+    pfn.edge=links
+    pfn
+  end
+  
   def Ngraph.complete(n)
     g = Ngraph.new
     g.vertex=Array.new(n){|i|i}
@@ -209,6 +266,7 @@ class Ngraph
   end
 
   def initialize(obj = nil)
+    @settings=eval(File.open(File.expand_path('~/.ngraph')).read)
     if obj
       i = -1
       if obj.class == Array
@@ -240,11 +298,52 @@ class Ngraph
 	@count = obj[:count]
         @mdseig = obj[:mdseig]
       end
-      @nbody.tree_vector_param = 500
+      @nbody.tree_vector_param = @settings[:tree_vector_param]
     end
   end
 
   ## marshal
+
+
+  def randomize(dirp=true)
+    grand=Ngraph.new
+    vl = self.vertex
+    nl = []
+    (if dirp
+       [self.hailist, self.derulist].transpose.map.with_index{|e, i|[e.map{|f|f.length}, i]}
+     else
+       self.tonalist.map.with_index{|tl, i|[tl.length, i]}
+     end).inject({}){
+      |h, e|k, v = e
+      if h[k]
+        h[k].push(v)
+      else
+        h[k]=[v]
+      end
+      h}.to_a.transpose.last.map{|idl|
+      [idl, idl.dup.shuffle].transpose.each{|p|src, dst = p; nl[dst]=vl[src]}}
+    grand.vertex = nl
+    grand.diredge = self.nbody.edge.map{|e|e.map{|i|nl[i]}}
+    grand
+  end
+
+
+  def infomap(cmd:'~/bin/Infomap', opt:'-d', dir:'/tmp')
+    inpath="/tmp/#{Process.pid.to_s}.net"
+    outpath=inpath.gsub('.net', '.tree')
+    cmd=File.expand_path(cmd)
+    cmdlog=''
+    ret=File.open(inpath, 'w'){|fd|
+      self.infomap_net(fd)
+      cmd="#{cmd} #{fd.path} #{opt} #{dir}"
+      cmdlog = `#{cmd}`
+      File.open(outpath).readlines[2..-1].inject([]){|ar, s|r=s.strip.split(' '); ar[r[3].to_i - 1] = [r.first.split(':')[0..-2].join(':'), r[1].to_f]; ar}
+    }
+    ret.unshift(cmdlog)
+    File.delete(inpath)
+    File.delete(outpath)
+    ret
+  end
 
   def infomap_net(out)
     head="*Vertices #{self.vertex.length}"
@@ -253,6 +352,7 @@ class Ngraph
     out.<< self.vertex.map.with_index{|v, i|[i+1, v].join(' ')}.join("\n") +"\n"
     out.<< boundary +"\n"
     out.<< self.nbody.edge.map{|e|e.map{|i|i+1}.join(' ')}.join("\n")
+    out.flush
   end
 
   def _dump(out)
@@ -303,7 +403,7 @@ class Ngraph
     @vertex.each_with_index{|v, i|@vthash[v]= i}
     @nbody= Nbody.new(@vertex.length)
     @nbody.chg= Array.new(@vertex.length, 1/Math::sqrt(@vertex.length))
-    @nbody.tree_vector_param= 500
+    @nbody.tree_vector_param = @settings[:tree_vector_param]
     self
   end
 
@@ -493,10 +593,10 @@ class Ngraph
   end
 
   def clst(vi)
-    tl=tonalist[vi]
+    tl = tonalist[vi] + [vi]
     tll=tl.length
     if tll> 1
-      self.subgraph(tl).edge.length.to_f/(tll*(tll - 1))
+      2*self.subgraph(tl).edge.length.to_f/(tll*(tll - 1))
     else
       0
     end
@@ -762,9 +862,17 @@ class Ngraph
   def subgraph(verticelist)
     sg=Ngraph.new
     v=self.vertex
-    sg.vertex=verticelist.map{|i|v[i]}
-    vh=sg.vertex.inject({}){|h,v|h[v]=true;h}
-    sg.edge=self.edge.filter{|e|e if vh[e.first] and vh[e.last]}
+    if verticelist.length**2/2 > self.edge.length
+      sg.vertex=verticelist.map{|i|v[i]}
+      vh=sg.vertex.inject({}){|h,v|h[v]=true;h}
+      sg.edge=self.edge.filter{|e|e if vh[e.first] and vh[e.last]}
+    else
+      ll=self.derulist
+      nv=[]
+      ne=[]
+      verticelist.each{|i|nv.push(v[i]); ne+=((ll[i] & verticelist).map{|j|[v[i], v[j]]})}
+      sg.vertex=nv; sg.diredge=ne
+    end
     sg
   end
 
