@@ -179,7 +179,7 @@ class Ngraph
     g
   end
 
-  def Ngraph.prefa(size=100000, prob = 0.0)
+  def Ngraph.prefo(size=100000, prob = 0.0)
     nodes=[0,1]
     links=[nodes.dup]
     (size-2).times{|i|nodes.push(i+2); vee=links.sample.sample ; links.push([vee, i+2].shuffle)
@@ -193,10 +193,10 @@ class Ngraph
     pfn
   end
 
-  def Ngraph.prefb(size: 100000, power: 3.0, mindeg: 1)
+  def Ngraph.prefa(size: 100000, power: 2.0, mindeg: 1)
     raise "choose larger than 1 for size and 2 for power." if size < 2
-    ## usage: power given by probability density function power (which is 1 larger than cumulative distribution).
-    ## any float value between 2 and 4 can be designated.
+    ## usage: power given by cumulative distribution function power (which is 1 smaller than the density function).
+    ## any float value between 1 and 3 can be designated.
 
 
     deglb=mindeg.to_pi
