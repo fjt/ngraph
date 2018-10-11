@@ -193,7 +193,7 @@ class Ngraph
     pfn
   end
 
-  def Ngraph.prefa(size: 100000, power: 2.0, mindeg: 1)
+  def Ngraph.prefa(size: 100000, power: 2.0, mindeg: 1.0)
     raise "choose larger than 1 for size and 2 for power." if size < 2
     ## usage: power given by cumulative distribution function power (which is 1 smaller than the density function).
     ## any float value between 1 and 3 can be designated.
@@ -207,7 +207,7 @@ class Ngraph
       anode=i+2
       nodes.push(anode)
       vee=nil
-      deglb.times{vee=links.sample.sample ; links.push([vee, anode].shuffle)}
+      mindeg.to_pi.times{vee=links.sample.sample ; links.push([vee, anode].shuffle)}
 
       alt = (mindeg*(2-power)/2/(power-1)).to_pi
 
