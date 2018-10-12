@@ -105,7 +105,18 @@ class Ngraph
     cube
   end
 
+  def Ngraph.erdos_reny(size:10000, prob: nil)
+    lim=size-1
+    prob = log(size)/size.to_f if not prob
+    links=[]
+    (0..lim).each{|i|
+      ((i+1)..lim).each{|ii| links.push([i, ii]) if rand < prob}}
+    er=Ngraph.new; er.vertex=(0..lim).to_a; er.diredge=links
+    er
+  end
+
   def Ngraph.random_graph(n, p = nil)
+    ## obsolete erdos-reny model do not use
     g = Ngraph.new
     g.vertex = Array.new(n){|i|i}
     vn = g.vertex.length-1
@@ -226,7 +237,7 @@ class Ngraph
     pfn.edge=links
     pfn
   end
-  
+
   def Ngraph.complete(n)
     g = Ngraph.new
     g.vertex=Array.new(n){|i|i}
