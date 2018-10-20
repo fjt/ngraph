@@ -564,10 +564,11 @@ class Ngraph
   def connected_segments
     updatedp=true
     segvec=(0..(self.vertex.length-1)).to_a
+    c=0
     while updatedp
       updatedp = self.tonalist.map.with_index{|vec, i|
-        min=segvec.values_at(*vec).min
-        segvec[i] = min if min < segvec[i]}.inject(nil){|r,v| v or r}
+        min=(segvec.values_at(*vec).min or i)
+        if segvec[i] > min; segvec[i] = min; vec.map{|ii|segvec[ii]=min}; end}.inject(nil){|r,v| v or r}
     end
     segvec.map.with_index{|k, i|[k, i]}.inject({}){|h, e| k, v=e; if h[k]; h[k].push(v); else; h[k]=[v]; end; h}.to_a.transpose.last
   end
