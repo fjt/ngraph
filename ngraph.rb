@@ -555,14 +555,6 @@ class Ngraph
     bfs(stt).flatten
   end
 
-  def rtonali(*st, &blk)
-    self.tonalist.values_at(*st).map{|tl|
-      tl.each{|i|
-        blk.call(i)}
-      rtonali(*tl, &blk)
-    }
-  end
-
   def connected_segments
     updatedp=true
     segvec=(0..(self.vertex.length-1)).to_a
