@@ -552,13 +552,7 @@ class Ngraph
   end
 
   def cseg(stt, seg=nil)
-    stt=[stt] if not stt.class ==Array
-    seg=stt if seg.nil?
-    if (nxt=(stt.map{|v|self.tonalist[v]}.flatten - seg).uniq).length == 0
-      seg
-    else
-      cseg(nxt, seg+nxt)
-    end
+    bfs(stt).flatten
   end
 
   def rtonali(*st, &blk)
