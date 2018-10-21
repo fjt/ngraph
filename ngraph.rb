@@ -561,14 +561,22 @@ class Ngraph
     end
   end
 
+  def rtonali(*st, &blk)
+    self.tonalist.values_at(*st).map{|tl|
+      tl.each{|i|
+        blk.call(i)}
+      rtonali(*tl, &blk)
+    }
+  end
+
   def connected_segments
     updatedp=true
     segvec=(0..(self.vertex.length-1)).to_a
     c=0
     while updatedp
       updatedp = self.tonalist.map.with_index{|vec, i|
-        min=(segvec.values_at(*vec).min or i)
-        if segvec[i] > min; segvec[i] = min; vec.map{|ii|segvec[ii]=min}; end}.inject(nil){|r,v| v or r}
+        min, max=segvec.values_at(*vec).sort.values_at(0, -1)
+        if min and min < max ; segvec[i] = min; vec.map{|ii|segvec[ii]=min}; end}.inject(nil){|r,v| v or r}
     end
     segvec.map.with_index{|k, i|[k, i]}.inject({}){|h, e| k, v=e; if h[k]; h[k].push(v); else; h[k]=[v]; end; h}.to_a.transpose.last
   end
