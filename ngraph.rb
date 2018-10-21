@@ -573,7 +573,7 @@ class Ngraph
     segvec.map.with_index{|k, i|[k, i]}.inject({}){|h, e| k, v=e; if h[k]; h[k].push(v); else; h[k]=[v]; end; h}.to_a.transpose.last
   end
 
-  def connected_segments_obs
+  def connected_segments_bfs
     tlo=(0..self.vertex.length-1).to_a
     segments=[]
     while tlo.length > 0
