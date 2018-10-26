@@ -315,29 +315,22 @@ class Ngraph
 
   ## marshal
 
-
-  def randomize(dirp=true)
-    grand=Ngraph.new
-    vl = self.vertex
-    nl = []
-    (if dirp
-       [self.hailist, self.derulist].transpose.map.with_index{|e, i|[e.map{|f|f.length}, i]}
-     else
-       self.tonalist.map.with_index{|tl, i|[tl.length, i]}
-     end).inject({}){
-      |h, e|k, v = e
-      if h[k]
-        h[k].push(v)
-      else
-        h[k]=[v]
-      end
-      h}.to_a.transpose.last.map{|idl|
-      [idl, idl.dup.shuffle].transpose.each{|p|src, dst = p; nl[dst]=vl[src]}}
-    grand.vertex = nl
-    grand.diredge = self.nbody.edge.map{|e|e.map{|i|nl[i]}}
-    grand
+  def randomize
+    dl=self.derulist.map{|e|e.length}
+    hl=self.hailist.map.with_index{|e, i|[i, e.length] if e.length > 0}.compact.inject({}){|h, e|h[e.first]=e.last; h}
+    el=[]
+    st=Time.now; said=nil
+    dl.each.with_index{|size, src|
+      hl.keys.sample(size).map{|dst|
+        el.push([src, dst]) if src != dst
+        hl[dst]-=1;         hl.delete(dst) if hl[dst]==0}
+      pe=el.length/self.edge.length.to_f
+    }
+    ran=Ngraph.new
+    ran.vertex=(0..(self.vertex.length-1)).to_a
+    ran.diredge=el
+    ran
   end
-
 
   def infomap(cmd:'~/bin/Infomap', opt:'-d', dir:'/tmp')
     inpath="/tmp/#{Process.pid.to_s}.net"
