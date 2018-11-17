@@ -29,6 +29,18 @@ require "Nbody"
 # end
  
 class Ngraph
+
+  def Ngraph.read_snap(io)
+    links=[]
+    while s=io.readline
+      links.push(s.strip.split("\t")) unless s.first == '#'
+    end
+    ret=Ngraph.new
+    ret.vertex=links.flatten.uniq
+    ret.diredge=links
+    ret
+  end
+
   def Ngraph.read_net(src)
     src=src.split("\n")
     vnum = src.first.strip.split(' ').last.to_i
