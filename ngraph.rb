@@ -30,11 +30,8 @@ require "Nbody"
  
 class Ngraph
 
-  def Ngraph.read_snap(io)
-    links=[]
-    while s=io.readline
-      links.push(s.strip.split("\t")) unless s.first == '#'
-    end
+  def Ngraph.read_snap(str)
+    links=str.split("\n").map{|s|s.strip.split("\t") unless s[0] == '#'}.compact
     ret=Ngraph.new
     ret.vertex=links.flatten.uniq
     ret.diredge=links
@@ -563,11 +560,12 @@ class Ngraph
   def connected_segments
     updatedp=true
     segvec=(0..(self.vertex.length-1)).to_a
+    st=self.tonalist.map_with_index{|v, i|v.push(i)}
     c=0
     while updatedp
-      updatedp = self.tonalist.map.with_index{|vec, i|
+      updatedp = st.map{|vec|
         min, max=segvec.values_at(*vec).sort.values_at(0, -1)
-        if min and min < max ; segvec[i] = min; vec.map{|ii|segvec[ii]=min}; end}.inject(nil){|r,v| v or r}
+        if min and min < max ;  vec.map{|ii|segvec[ii]=min}; end}.inject(nil){|r,v| v or r}
     end
     segvec.map.with_index{|k, i|[k, i]}.inject({}){|h, e| k, v=e; if h[k]; h[k].push(v); else; h[k]=[v]; end; h}.to_a.transpose.last
   end
