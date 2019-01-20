@@ -352,7 +352,7 @@ class Ngraph
       cmdlog = `#{cmd}`
       File.open(outpath).readlines[2..-1].inject([]){|ar, s|r=s.strip.split(' '); ar[r[3].to_i - 1] = [r.first.split(':')[0..-2].join(':'), r[1].to_f]; ar}
     }
-    ret.unshift(cmdlog)
+    ret.push(cmdlog)
     File.delete(inpath)
     File.delete(outpath)
     ret
