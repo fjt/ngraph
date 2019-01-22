@@ -324,6 +324,15 @@ class Ngraph
 
   ## marshal
 
+  def modularity(cluster_labels)
+    v2c=cluster_labels.map.with_index{|n, i|[i, n]}.inject({}){|h, e|idx, label = e; if h[label]; h[label].push(idx); else; h[label]=[idx]; end; h}
+    denom = self.vertex.length.to_f
+    tn=self.tonalist
+    expect=cluster_labels.map.with_index{|v, i| tn[i].length*v2c[v].length/denom}.sum
+    experi=cluster_labels.map.with_index{|v, i| (tn[i] & v2c[v]).length}.sum
+    (experi - expect) / self.edge.length.to_f / 2
+  end
+
   def randomize
     dl=self.derulist.map{|e|e.length}
     hl=self.hailist.map.with_index{|e, i|[i, e.length] if e.length > 0}.compact.inject({}){|h, e|h[e.first]=e.last; h}
