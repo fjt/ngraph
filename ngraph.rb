@@ -324,6 +324,10 @@ class Ngraph
 
   ## marshal
 
+  def the_hub
+    self.tonalist.map.with_index{|e, i|[e.length, i]}.sort_by{|e|e.first}.last.last
+  end
+
   def modularity(cluster_labels)
     v2c=cluster_labels.map.with_index{|n, i|[i, n]}.inject({}){|h, e|idx, label = e; if h[label]; h[label].push(idx); else; h[label]=[idx]; end; h}
     denom = self.vertex.length.to_f
@@ -590,6 +594,7 @@ class Ngraph
     segments
   end
 
+  alias :cns :connected_segments
 
   def dbfs(vl, depth=-1, vt=Array.new(@vertex.length){|i|i})
     vl=[vl] if vl.class != Array
