@@ -325,7 +325,8 @@ class Ngraph
   ## marshal
 
   def the_hub
-    self.tonalist.map.with_index{|e, i|[e.length, i]}.sort_by{|e|e.first}.last.last
+    i=self.tonalist.map.with_index{|e, i|[e.length, i]}.sort_by{|e|e.first}.last.last
+    [i, @vertex[i]]
   end
 
   def modularity(cluster_labels)
@@ -354,13 +355,13 @@ class Ngraph
     ran
   end
 
-  def infomap(cmd:'~/bin/Infomap', opt:'-d', dir:'/tmp')
+  def infomap(cmd:'~/bin/Infomap', opt:'-d', dir:'/tmp', weight:nil)
     inpath="/tmp/#{Process.pid.to_s}.net"
     outpath=inpath.gsub('.net', '.tree')
     cmd=File.expand_path(cmd)
     cmdlog=''
     ret=File.open(inpath, 'w'){|fd|
-      self.infomap_net(fd)
+      self.infomap_net(out:fd, weight:weight, dirp:opt)
       cmd="#{cmd} #{fd.path} #{opt} #{dir}"
       cmdlog = `#{cmd}`
       File.open(outpath).readlines[2..-1].inject([]){|ar, s|r=s.strip.split(' '); ar[r[3].to_i - 1] = [r.first.split(':')[0..-2].join(':'), r[1].to_f]; ar}
@@ -371,13 +372,25 @@ class Ngraph
     ret
   end
 
-  def infomap_net(out)
+  def infomap_net(out:, weight:, dirp:op)
     head="*Vertices #{self.vertex.length}"
-    boundary="*Edges #{self.edge.length}"
+    boundary = if weight and dirp == '-u'
+                 "*Edges #{self.edge.length * 2}"
+               else
+                 "*Edges #{self.edge.length}"
+               end
     out.<< head + "\n"
     out.<< self.vertex.map.with_index{|v, i|[i+1, v].join(' ')}.join("\n") +"\n"
     out.<< boundary +"\n"
-    out.<< self.nbody.edge.map{|e|e.map{|i|i+1}.join(' ')}.join("\n")
+    if weight
+      out.<< [self.nbody.edge, weight].transpose.map{|e, w|e.map{|v|v+1}.push(w).join(' ')}.join("\n")
+      if dirp == '-u'
+        out.<< "\n"
+        out.<< [self.nbody.edge, weight].transpose.map{|e, w|e.reverse.map{|v|v+1}.push(w).join(' ')}.join("\n")
+      end
+    else
+      out.<< self.nbody.edge.map{|e|e.map{|i|i+1}.join(' ')}.join("\n")
+    end
     out.flush
   end
 
@@ -394,7 +407,7 @@ class Ngraph
 		   :vertex=>@vertex,
 		   :edge=>@edge,
 		   :count=>@count,
-                 :mdseig=>@mdseig}, out)
+                   :mdseig=>@mdseig}, out)
   end
 
   def self._load(obj)
@@ -435,8 +448,9 @@ class Ngraph
 
   def diredge=(ary) ## load edges to Nbody and setup their length, hookparams.
     @edge=ary.uniq
+    @linkweight=[]
     # @nbody.edge=@edge.map{|e|[self.vi(e[0]), self.vi(e[1])]}
-    @nbody.edge=@edge.filter{|e|flag=(i=self.vi(e[0]) and ii=self.vi(e[1])); [i, ii] if flag}
+    @nbody.edge=@edge.filter{|e|flag=(i=self.vi(e[0]) and ii=self.vi(e[1])); if flag ;  [i, ii]; end}
     splength=1.0/Math::log(@vertex.length)
     # splength=1.0
     # hookparam=1.0/Math::log(@vertex.length)
@@ -1156,13 +1170,13 @@ class Ngraph
 
 
   ["pos",
-    "vel",
-    "acc",
-    "mas",
-    "chg",
-    "hook",
-    "springlength",
-    "airdrag"].each{|mname|
+   "vel",
+   "acc",
+   "mas",
+   "chg",
+   "hook",
+   "springlength",
+   "airdrag"].each{|mname|
     define_method(mname){@nbody.send(mname)}
     mname2= mname+"="
     define_method(mname2){|arg|
@@ -1174,16 +1188,16 @@ class Ngraph
       end
       if arg.class != Array
 	arg = Array.new(len, arg)
-      end      
+      end
       @nbody.send(mname2, arg.rmap{|i|i.to_f})}}
 
   alias :spln :springlength
   alias :spln=  :springlength=
   alias :air :airdrag
   alias :air= :airdrag=
-  
-  
-  def force
+
+   
+    def force
     @nbody.coulomb_force
     self
   end
@@ -1199,6 +1213,18 @@ class Ngraph
 
   def vi(v)
     @vthash[v]
+  end
+
+  def linkweight
+    @linkweight
+  end
+
+  def linkweight=(weight)
+    if self.edge.length == weight.length
+      @linkweight=weight
+    else
+      raise "weight lenth differ from edge size"
+    end
   end
 
   def pos2vrml
