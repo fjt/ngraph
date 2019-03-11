@@ -329,12 +329,20 @@ class Ngraph
     [i, @vertex[i]]
   end
 
+  def single_modularity(set)
+    tn=self.tonalist
+    intn=set.map{|i|tn[i].length}.sum
+    (set.map{|i|tn[i]}.flatten.filter{|i| set.index(i)}.length - (intn * set.length)/self.vertex.length.to_f)/intn
+  end
+
   def modularity(cluster_labels)
     v2c=cluster_labels.map.with_index{|n, i|[i, n]}.inject({}){|h, e|idx, label = e; if h[label]; h[label].push(idx); else; h[label]=[idx]; end; h}
     denom = self.vertex.length.to_f
     tn=self.tonalist
     expect=cluster_labels.map.with_index{|v, i| tn[i].length*v2c[v].length/denom}.sum
     experi=cluster_labels.map.with_index{|v, i| (tn[i] & v2c[v]).length}.sum
+##    experi=v2c.to_a.map{|l, m|m.map{|i|tn[i]}.flatten.filter{|i|m.index(i)}.length}.sum
+
     (experi - expect) / self.edge.length.to_f / 2
   end
 
@@ -446,7 +454,8 @@ class Ngraph
     self
   end
 
-  def diredge=(ary) ## load edges to Nbody and setup their length, hookparams.
+  def diredge=(ary, allowselfloop=nil) ## load edges to Nbody and setup their length, hookparams.
+    ary=ary.filter{|e|e unless e.first == e.last} unless allowselfloop
     @edge=ary.uniq
     @linkweight=[]
     # @nbody.edge=@edge.map{|e|[self.vi(e[0]), self.vi(e[1])]}
