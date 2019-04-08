@@ -455,7 +455,7 @@ class Ngraph
   end
 
   def diredge=(ary, allowselfloop=nil) ## load edges to Nbody and setup their length, hookparams.
-    ary=ary.filter{|e|e unless e.first == e.last} unless allowselfloop
+    ary = if allowselfloop; ary; else; ary.filter{|e|e unless e.first == e.last}; end
     @edge=ary.uniq
     @linkweight=[]
     # @nbody.edge=@edge.map{|e|[self.vi(e[0]), self.vi(e[1])]}
