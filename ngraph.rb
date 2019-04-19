@@ -520,6 +520,7 @@ class Ngraph
       @nbody.edge.each{|e|
 	@tonalist[e[0]].push(e[1])
 	@tonalist[e[1]].push(e[0])}
+      @tonalist.each{|e|e.uniq!}
       @tonalist
     end
   end
@@ -596,7 +597,7 @@ class Ngraph
   def connected_segments
     updatedp=true
     segvec=(0..(self.vertex.length-1)).to_a
-    st=self.tonalist.map_with_index{|v, i|v.push(i)}
+    st=self.tonalist.map_with_index{|v, i|v.dup.push(i)}
     c=0
     while updatedp
       updatedp = st.map{|vec|
